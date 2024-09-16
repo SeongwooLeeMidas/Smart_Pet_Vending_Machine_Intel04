@@ -5,20 +5,22 @@
 	$query = "select name, date, time, num1, num2, num3, num4, num5, num6 from dog_food_categories ";
 	$result = mysqli_query($conn, $query);
 
-	$data = array(array('LSW_SQL','num1','num2','num3','num4','num5','num6'));
+	$data = array(array('Date/Time', 'Num1', 'Num2', 'Num3', 'Num4', 'Num5', 'Num6'));
 
 	if($result)
 	{
 		while($row = mysqli_fetch_array($result))
 		{
-			array_push($data, array($row['date']."\n".$row['time'], intval($row['num1']),intval($row['num2']) ,intval($row['num3']), intval($row['num4'], intval($row['num5'], intval($row['num6']));
+			array_push($data, array($row['date']."\n".$row['time'], intval($row['num1']),intval($row['num2']) ,intval($row['num3']), intval($row['num4']), intval($row['num5']), intval($row['num6'])));
 		}
 	}
 
 	$options = array(
 			'title' => 'Dog Food Categories - Num1 ~ Num6',
 			'width' => 1000, 'height' => 400,
-			'curveType' => 'function'
+			'bars' => 'vertical',
+			'vAxis' => array('title' => 'Quantity'),
+			'hAxis' => array('title' => 'Date/Time')
 			);
 
 ?>
@@ -28,7 +30,7 @@
 var data = <?=json_encode($data) ?>;
 var options = <?= json_encode($options) ?>;
 
-google.load('visualization', '1.0', {'packages':['corechart']});
+google.load('visualization', '1.0', {'packages':['corechart', 'bar']});
 
 google.setOnLoadCallback(function() {
 	var chart = new google.visualization.BarChart(document.querySelector('#chart_div'));

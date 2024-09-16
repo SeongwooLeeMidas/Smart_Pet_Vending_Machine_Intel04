@@ -36,7 +36,7 @@
 
 	<?php
 		$conn = mysqli_connect("localhost", "iot", "pwiot");
-		mysqli_select_db($conn, "dog_food_categories");
+		mysqli_select_db($conn, "iotdb");
 		$result = mysqli_query($conn, "select * from dog_food_categories");
 		while($row = mysqli_fetch_array($result))
 		{
