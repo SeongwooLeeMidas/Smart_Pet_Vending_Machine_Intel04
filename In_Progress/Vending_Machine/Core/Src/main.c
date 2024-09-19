@@ -18,13 +18,16 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
+#include "usart.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "esp.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "esp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,35 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MOTOR_PORT GPIOA
-#define MOTOR_PIN_1 GPIO_PIN_0
-#define MOTOR_PIN_2 GPIO_PIN_1
-#define MOTOR_PIN_3 GPIO_PIN_4
-#define MOTOR_PIN_4 GPIO_PIN_5
-#define MOTOR_PIN_5 GPIO_PIN_6
-#define MOTOR_PIN_6 GPIO_PIN_7
-#define NUM_MOTOR_PINS 6
 
-#define IR_PORT GPIOB
-#define IR_PIN_1 GPIO_PIN_0
-#define IR_PIN_2 GPIO_PIN_1
-#define IR_PIN_3 GPIO_PIN_2
-#define IR_PIN_4 GPIO_PIN_13
-#define IR_PIN_5 GPIO_PIN_14
-#define IR_PIN_6 GPIO_PIN_15
-#define NUM_IR_PINS 6
-
-#define SAMPLE_COUNT 5
-
-#ifdef __GNUC__
-/* With GCC, small printf (option LD Linker->Libraries->Small printf
-   set to 'Yes') calls __io_putchar() */
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif /* __GNUC__ */
-#define ARR_CNT 5
-#define CMD_SIZE 50
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,26 +46,16 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
 /* USER CODE BEGIN PV */
-uint8_t rx2char;
-extern cb_data_t cb_data;
-extern volatile unsigned char rx2Flag;
-extern volatile char rx2Data[50];
-GPIO_PinState currentIrValues[NUM_IR_PINS];
-GPIO_PinState previousIrValues[NUM_IR_PINS];
-uint16_t irPins[NUM_IR_PINS] = {IR_PIN_1, IR_PIN_2, IR_PIN_3, IR_PIN_4, IR_PIN_5, IR_PIN_6};
-uint16_t motorPins[NUM_MOTOR_PINS] = {MOTOR_PIN_1, MOTOR_PIN_2, MOTOR_PIN_3, MOTOR_PIN_4, MOTOR_PIN_5, MOTOR_PIN_6};
-GPIO_PinState sampleValues[NUM_IR_PINS][SAMPLE_COUNT];
-int sampleIndex[NUM_IR_PINS] = {0};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-char strBuff[MAX_ESP_COMMAND_LEN];
-void esp_event(char *);
-GPIO_PinState majorityVote(GPIO_PinState* values, int size);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -104,6 +69,7 @@ GPIO_PinState majorityVote(GPIO_PinState* values, int size);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 	int ret = 0;
   /* USER CODE END 1 */
@@ -126,57 +92,28 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   ret |= drv_uart_init();
   ret |= drv_esp_init();
   if(ret != 0) Error_Handler();
   printf("Start main() \r\n");
-  AiotClient_Init();
-  for (int i = 0; i < NUM_IR_PINS; i++) {
-			previousIrValues[i] = GPIO_PIN_RESET;  // 초기값은 RESET
-			currentIrValues[i] = GPIO_PIN_RESET;   // 초기값은 RESET
-	}
+	AiotClient_Init();
   /* USER CODE END 2 */
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-		if(strstr((char *)cb_data.buf,"+IPD") && cb_data.buf[cb_data.length-1] == '\n')
-		{
-			strcpy(strBuff,strchr((char *)cb_data.buf,'['));
-			memset(cb_data.buf,0x0,sizeof(cb_data.buf));
-			cb_data.length = 0;
-			esp_event(strBuff);
-		}
-		if(rx2Flag)
-		{
-			printf("recv2 : %s\r\n",rx2Data);
-			rx2Flag =0;
-		}
-		/*
-  	for (int i = 0; i < NUM_IR_PINS; i++) {
-			// 현재 센서 값을 읽어 샘플 배열에 저장
-			sampleValues[i][sampleIndex[i]] = HAL_GPIO_ReadPin(IR_PORT, irPins[i]);
-			sampleIndex[i] = (sampleIndex[i] + 1) % SAMPLE_COUNT;  // 순환 인덱스
-
-			// 5번 읽었으면 다수결로 값을 결정
-			if (sampleIndex[i] == 0) {  // 5번째 값이 입력되면 다수결로 처리
-				GPIO_PinState majorityValue = majorityVote(sampleValues[i], SAMPLE_COUNT);
-				// 현재 값을 업데이트하기 전에 이전 값을 저장
-				previousIrValues[i] = currentIrValues[i];
-				// 다수결로 나온 값을 현재 값에 저장
-				currentIrValues[i] = majorityValue;
-
-				// 이전 값이 RESET이고 현재 값이 SET이면 모터를 멈춤
-				if (previousIrValues[i] == GPIO_PIN_RESET && currentIrValues[i] == GPIO_PIN_SET) {
-					HAL_GPIO_WritePin(MOTOR_PORT, motorPins[i], GPIO_PIN_RESET);  // 모터 멈춤
-				}
-			}
-  	}
-  	*/
-  	//printf("IR1:%d IR2:%d IR3:%d IR4:%d IR5:%d IR6:%d\n",currentIrValues[0],currentIrValues[1],currentIrValues[2],currentIrValues[3],currentIrValues[4],currentIrValues[5]);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -201,14 +138,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 100;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -224,123 +160,36 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
+
 /**
-  * @brief GPIO Initialization Function
-  * @param None
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM2 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
   * @retval None
   */
-static void MX_GPIO_Init(void)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN Callback 0 */
 
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM2) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA0 PA1 PA4 PA5
-                           PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB0 PB1 PB2 PB13
-                           PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE END Callback 1 */
 }
-
-/* USER CODE BEGIN 4 */
-void esp_event(char * recvBuf)
-{
-  int i=0;
-  int motorNumber = 0;
-  char * pToken;
-  char * pArray[ARR_CNT]={0};
-  char sendBuf[MAX_UART_COMMAND_LEN]={0};
-
-	strBuff[strlen(recvBuf)-1] = '\0';	//'\n' cut
-	printf("\r\nDebug recv : %s\r\n",recvBuf);
-
-  pToken = strtok(recvBuf,"[@]");
-  while(pToken != NULL)
-  {
-    pArray[i] = pToken;
-    if(++i >= ARR_CNT)
-      break;
-    pToken = strtok(NULL,"[@]");
-  }
-
-  if(!strcmp(pArray[1], "MOTOR")) {
-      motorNumber = atoi(pArray[2]);  // pArray[2] 문자?��?�� ?��?���? �??��
-      if(motorNumber >= 1 && motorNumber <= NUM_MOTOR_PINS) {
-          HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);  // 모터 번호?�� 맞는 ?? ?��?��
-      }
-      sprintf(sendBuf, "[%s]%s@%s\n", pArray[0], pArray[1], pArray[2]);
-  }
-  else if(!strncmp(pArray[1]," New conn",8))
-  {
-	   printf("Debug : %s, %s\r\n",pArray[0],pArray[1]);
-     return;
-  }
-  else if(!strncmp(pArray[1]," Already log",8))
-  {
- 	    printf("Debug : %s, %s\r\n",pArray[0],pArray[1]);
-			esp_client_conn();
-      return;
-  }
-  else
-      return;
-
-  esp_send_data(sendBuf);
-  //printf("Debug send : %s\r\n",sendBuf);
-}
-
-GPIO_PinState majorityVote(GPIO_PinState* values, int size) {
-    int setCount = 0;
-    int resetCount = 0;
-
-    // SET과 RESET 값의 개수를 카운팅
-    for (int i = 0; i < size; i++) {
-        if (values[i] == GPIO_PIN_SET) {
-            setCount++;
-        } else {
-            resetCount++;
-        }
-    }
-    // 더 많이 나온 값 반환
-    return (setCount > resetCount) ? GPIO_PIN_SET : GPIO_PIN_RESET;
-}
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
