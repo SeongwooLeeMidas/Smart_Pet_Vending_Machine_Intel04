@@ -83,8 +83,6 @@ int sampleIndex[NUM_IR_PINS] = {0};
 /* USER CODE END Variables */
 osThreadId IR_TaskHandle;
 osThreadId UART_TaskHandle;
-osThreadId Motor_TaskHandle;
-osMessageQId msgQueueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -95,7 +93,6 @@ GPIO_PinState majorityVote(GPIO_PinState* values, int size);
 
 void IR_Task_Function(void const * argument);
 void UART_Task_Function(void const * argument);
-void Motor_Task_Function(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -137,11 +134,6 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
-  /* Create the queue(s) */
-  /* definition and creation of msgQueue */
-  osMessageQDef(msgQueue, 16, uint16_t);
-  msgQueueHandle = osMessageCreate(osMessageQ(msgQueue), NULL);
-
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -154,10 +146,6 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of UART_Task */
   osThreadDef(UART_Task, UART_Task_Function, osPriorityNormal, 0, 128);
   UART_TaskHandle = osThreadCreate(osThread(UART_Task), NULL);
-
-  /* definition and creation of Motor_Task */
-  //osThreadDef(Motor_Task, Motor_Task_Function, osPriorityNormal, 0, 128);
-  //Motor_TaskHandle = osThreadCreate(osThread(Motor_Task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -180,21 +168,16 @@ void IR_Task_Function(void const * argument)
 	for(;;)
 	{
 		for (int i = 0; i < NUM_IR_PINS; i++) {
-				// 현재 센서 값을 읽어 샘플 배열에 저장
 				sampleValues[i][sampleIndex[i]] = HAL_GPIO_ReadPin(IR_PORT, irPins[i]);
-				sampleIndex[i] = (sampleIndex[i] + 1) % SAMPLE_COUNT;  // 순환 인덱스
+				sampleIndex[i] = (sampleIndex[i] + 1) % SAMPLE_COUNT;
 
-				// 5번 읽었으면 다수결로 값을 결정
-				if (sampleIndex[i] == 0) {  // 5번째 값이 입력되면 다수결로 처리
+				if (sampleIndex[i] == 0) {
 					GPIO_PinState majorityValue = majorityVote(sampleValues[i], SAMPLE_COUNT);
-					// 현재 값을 업데이트하기 전에 이전 값을 저장
 					previousIrValues[i] = currentIrValues[i];
-					// 다수결로 나온 값을 현재 값에 저장
 					currentIrValues[i] = majorityValue;
 
-					// 이전 값이 RESET이고 현재 값이 SET이면 모터를 멈춤
 					if (previousIrValues[i] == GPIO_PIN_RESET && currentIrValues[i] == GPIO_PIN_SET) {
-						HAL_GPIO_WritePin(MOTOR_PORT, motorPins[i], GPIO_PIN_RESET);  // 모터 멈춤
+						HAL_GPIO_WritePin(MOTOR_PORT, motorPins[i], GPIO_PIN_RESET);
 					}
 				}
 			}
@@ -233,40 +216,6 @@ void UART_Task_Function(void const * argument)
     osDelay(500);
   }
   /* USER CODE END UART_Task_Function */
-}
-
-/* USER CODE BEGIN Header_Motor_Task_Function */
-/**
-* @brief Function implementing the Motor_Task thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_Motor_Task_Function */
-void Motor_Task_Function(void const * argument)
-{
-  /* USER CODE BEGIN Motor_Task_Function */
-	osEvent event;
-  /* Infinite loop */
-	for (;;)
-	{
-			event = osMessageGet(msgQueueHandle, osWaitForever);
-			if (event.status == osEventMessage)
-			{
-					int motorNumber = event.value.v;
-					if (motorNumber >= 1 && motorNumber <= 6)
-					{
-							HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);  // 모터 ON
-							printf("MOTOR %d ON\r\n", motorNumber);
-					}
-					else if (motorNumber <= -1 && motorNumber >= -6)
-					{
-							HAL_GPIO_WritePin(MOTOR_PORT, motorPins[-motorNumber - 1], GPIO_PIN_RESET);  // 모터 OFF
-							printf("MOTOR %d OFF\r\n", -motorNumber);
-					}
-			}
-			osDelay(500);
-	}
-  /* USER CODE END Motor_Task_Function */
 }
 
 /* Private application code --------------------------------------------------*/
