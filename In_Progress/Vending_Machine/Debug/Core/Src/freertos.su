@@ -1,7 +1,6 @@
-../Core/Src/freertos.c:109:6:vApplicationGetIdleTaskMemory	24	static
-../Core/Src/freertos.c:123:6:MX_FREERTOS_Init	88	static
-../Core/Src/freertos.c:175:6:IR_Task_Function	32	static
-../Core/Src/freertos.c:214:6:UART_Task_Function	16	static
-../Core/Src/freertos.c:245:6:Motor_Task_Function	32	static
-../Core/Src/freertos.c:274:15:majorityVote	24	static
-../Core/Src/freertos.c:284:6:esp_event	120	static
+../Core/Src/freertos.c:106:6:vApplicationGetIdleTaskMemory	24	static
+../Core/Src/freertos.c:120:6:MX_FREERTOS_Init	72	static
+../Core/Src/freertos.c:163:6:IR_Task_Function	32	static
+../Core/Src/freertos.c:197:6:UART_Task_Function	16	static
+../Core/Src/freertos.c:223:15:majorityVote	24	static
+../Core/Src/freertos.c:233:6:esp_event	120	static
