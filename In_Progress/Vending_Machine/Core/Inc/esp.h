@@ -7,8 +7,8 @@
 #define MAX_ESP_COMMAND_LEN    64
 #define MAX_ESP_CLIENT_NUM     10
 
-#define SSID "iot1"
-#define PASS "iot10000"
+#define SSID "iot0"
+#define PASS "iot00000"
 #define LOGID "KJD_STM"
 #define PASSWD "PASSWD"
 #define DST_IP "10.10.141.67"
