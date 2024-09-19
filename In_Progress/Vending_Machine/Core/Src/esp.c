@@ -10,7 +10,7 @@
 static char ip_addr[16];
 static char response[MAX_ESP_RX_BUFFER];
 //==================uart2=========================
-UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart2;
 volatile unsigned char rx2Flag = 0;
 volatile char rx2Data[50];
 uint8_t cdata;
@@ -23,7 +23,7 @@ extern uint8_t cdata;
 static uint8_t data;
 //static cb_data_t cb_data;
 cb_data_t cb_data;
-UART_HandleTypeDef huart6;
+extern UART_HandleTypeDef huart6;
 static int esp_at_command(uint8_t *cmd, uint8_t *resp, uint16_t *length, int16_t time_out)
 {
     *length = 0;
