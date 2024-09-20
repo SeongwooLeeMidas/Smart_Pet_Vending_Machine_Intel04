@@ -25,7 +25,6 @@ int drv_esp_test_command(void);
 void AiotClient_Init(void);
 int esp_client_conn(void);
 void esp_send_data(char *data);
-
 //==================uart3=========================
 #define MAX_UART_RX_BUFFER      512
 #define MAX_UART_COMMAND_LEN    64

@@ -92,8 +92,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
-  MX_USART6_UART_Init();
+  //MX_USART2_UART_Init();
+  //MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   ret |= drv_uart_init();
   ret |= drv_esp_init();
