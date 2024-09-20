@@ -73,7 +73,7 @@ static int esp_get_ip_addr(uint8_t is_debug)
     else
     {
         uint16_t length;
-        if(esp_at_command((uint8_t *)"AT+CIPSTA?\r\n", (uint8_t *)response, &length, 1000) != 0)
+        if(esp_at_command((uint8_t *)"AT+CIPSTA?\r\n", (uint8_t *)response, &length, 5000) != 0)
             printf("ip_state command fail\r\n");
         else
         {
@@ -114,7 +114,9 @@ static int request_ip_addr(uint8_t is_debug)
 {
     uint16_t length = 0;
 
-    if(esp_at_command((uint8_t *)"AT+CIFSR\r\n", (uint8_t *)response, &length, 1000) != 0)
+    printf("request_ip_addr\r\n");
+
+    if(esp_at_command((uint8_t *)"AT+CIFSR\r\n", (uint8_t *)response, &length, 5000) != 0)
         printf("request ip_addr command fail\r\n");
     else
     {
@@ -149,11 +151,12 @@ static int request_ip_addr(uint8_t is_debug)
 }
 int esp_client_conn()
 {
+	printf("esp_client_conn\r\n");
 	char at_cmd[MAX_ESP_COMMAND_LEN] = {0, };
   uint16_t length = 0;
 	sprintf(at_cmd,"AT+CIPSTART=\"TCP\",\"%s\",%d\r\n",DST_IP,DST_PORT);
-	esp_at_command((uint8_t *)at_cmd,(uint8_t *)response, &length, 1000);					//CONNECT
-
+	esp_at_command((uint8_t *)at_cmd,(uint8_t *)response, &length, 5000);					//CONNECT
+	printf("response: %s\r\n",response);
 	esp_send_data("["LOGID":"PASSWD"]");
 	return 0;
 }
@@ -161,7 +164,7 @@ int esp_client_conn()
 int drv_esp_init(void)
 {
     huart6.Instance = USART6;
-    huart6.Init.BaudRate = 38400;
+    huart6.Init.BaudRate = 115200;
     huart6.Init.WordLength = UART_WORDLENGTH_8B;
     huart6.Init.StopBits = UART_STOPBITS_1;
     huart6.Init.Parity = UART_PARITY_NONE;
@@ -189,7 +192,7 @@ void version_func()
 {
   uint16_t length = 0;
   printf("esp firmware version\r\n");
-  if(esp_at_command((uint8_t *)"AT+GMR\r\n", (uint8_t *)response, &length, 1000) != 0)
+  if(esp_at_command((uint8_t *)"AT+GMR\r\n", (uint8_t *)response, &length, 3000) != 0)
       printf("ap scan command fail\r\n");
   else
   {
@@ -202,10 +205,21 @@ void ap_conn_func(char *ssid, char *passwd)
 {
   uint16_t length = 0;
 	char at_cmd[MAX_ESP_COMMAND_LEN] = {0, };
+
+	printf("ap_conn_func\r\n");
   if(ssid == NULL || passwd == NULL)
   {
       printf("invalid command : ap_conn <ssid> <passwd>\r\n");
       return;
+  }
+
+  memset(at_cmd, 0x00, sizeof(at_cmd));
+  if(esp_at_command((uint8_t *)"AT+CWMODE=1\r\n", (uint8_t *)response, &length, 6000) != 0)
+      printf("Station mode fail\r\n");
+  else
+  {
+      for(int i = 0 ; i < length ; i++)
+          printf("%c", response[i]);
   }
 
   memset(at_cmd, 0x00, sizeof(at_cmd));
@@ -369,6 +383,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void AiotClient_Init()
 {
+	printf("AiotClient Init\r\n");
 	reset_func();
 //	version_func();
 	ap_conn_func(SSID,PASS);
@@ -381,12 +396,13 @@ void AiotClient_Init()
 
 void esp_send_data(char *data)
 {
+	printf("esp_send_data\r\n");
 	char at_cmd[MAX_ESP_COMMAND_LEN] = {0, };
   uint16_t length = 0;
 	sprintf(at_cmd,"AT+CIPSEND=%d\r\n",strlen(data));
-	if(esp_at_command((uint8_t *)at_cmd,(uint8_t *)response, &length, 1000) == 0)
+	if(esp_at_command((uint8_t *)at_cmd,(uint8_t *)response, &length, 3000) == 0)
 	{
-			esp_at_command((uint8_t *)data,(uint8_t *)response, &length, 1000);
+			esp_at_command((uint8_t *)data,(uint8_t *)response, &length, 3000);
 	}
 }
 

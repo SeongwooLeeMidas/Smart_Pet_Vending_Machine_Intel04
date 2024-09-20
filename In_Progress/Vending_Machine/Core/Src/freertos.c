@@ -182,7 +182,7 @@ void IR_Task_Function(void const * argument)
 				}
 			}
 			//printf("IR1:%d IR2:%d IR3:%d IR4:%d IR5:%d IR6:%d \r\n", currentIrValues[0], currentIrValues[1], currentIrValues[2], currentIrValues[3], currentIrValues[4], currentIrValues[5]);  // printf ?��?�� ?��?��
-			osDelay(10);
+			osDelay(50);
 	}
   /* USER CODE END IR_Task_Function */
 }
@@ -201,6 +201,7 @@ void UART_Task_Function(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+  	printf("UART Task\r\n");
   	if(strstr((char *)cb_data.buf,"+IPD") && cb_data.buf[cb_data.length-1] == '\n')
 		{
 			strcpy(strBuff,strchr((char *)cb_data.buf,'['));
@@ -213,7 +214,7 @@ void UART_Task_Function(void const * argument)
 			printf("recv2 : %s\r\n",rx2Data);
 			rx2Flag =0;
 		}
-    osDelay(500);
+    osDelay(1000);
   }
   /* USER CODE END UART_Task_Function */
 }

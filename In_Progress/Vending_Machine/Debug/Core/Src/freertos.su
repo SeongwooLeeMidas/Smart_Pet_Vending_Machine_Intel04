@@ -2,5 +2,5 @@
 ../Core/Src/freertos.c:120:6:MX_FREERTOS_Init	72	static
 ../Core/Src/freertos.c:163:6:IR_Task_Function	32	static
 ../Core/Src/freertos.c:197:6:UART_Task_Function	16	static
-../Core/Src/freertos.c:223:15:majorityVote	24	static
-../Core/Src/freertos.c:233:6:esp_event	120	static
+../Core/Src/freertos.c:224:15:majorityVote	24	static
+../Core/Src/freertos.c:234:6:esp_event	120	static
