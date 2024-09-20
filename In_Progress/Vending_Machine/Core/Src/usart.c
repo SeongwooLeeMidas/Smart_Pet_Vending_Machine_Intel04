@@ -21,7 +21,12 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+uint8_t rx2char;
+volatile unsigned char rx2Flag = 0;
+volatile char rx2Data[50];
+volatile unsigned char btFlag = 0;
+uint8_t btchar;
+char btData[50];
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart2;
@@ -69,7 +74,7 @@ void MX_USART6_UART_Init(void)
 
   /* USER CODE END USART6_Init 1 */
   huart6.Instance = USART6;
-  huart6.Init.BaudRate = 115200;
+  huart6.Init.BaudRate = 9600;
   huart6.Init.WordLength = UART_WORDLENGTH_8B;
   huart6.Init.StopBits = UART_STOPBITS_1;
   huart6.Init.Parity = UART_PARITY_NONE;
@@ -103,7 +108,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
+    GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -158,7 +163,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
+    HAL_GPIO_DeInit(GPIOA, USART_TX_Pin|USART_RX_Pin);
 
   /* USER CODE BEGIN USART2_MspDeInit 1 */
 
@@ -187,5 +192,50 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+int drv_uart_init(void)
+{
+	HAL_UART_Receive_IT(&huart2, &rx2char,1);
+	return 0;
+}
+int drv_esp_init(void) {
+	HAL_UART_Receive_IT(&huart6, &btchar, 1);  // Initialize UART for ESP communication
+	return 0;  // Return 0 if successful
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance == USART2)
+    {
+    	static int i=0;
+    	rx2Data[i] = rx2char;
+    	if((rx2Data[i] == '\r')||(btData[i] == '\n'))
+    	{
+    		rx2Data[i] = '\0';
+    		rx2Flag = 1;
+    		i = 0;
+    	}
+    	else
+    	{
+    		i++;
+    	}
+    	HAL_UART_Receive_IT(&huart2, &rx2char,1);
+    }
+    if(huart->Instance == USART6)
+    {
+    	static int i=0;
+    	btData[i] = btchar;
+    	if((btData[i] == '\n') || btData[i] == '\r')
+    	{
+    		btData[i] = '\0';
+    		btFlag = 1;
+    		i = 0;
+    	}
+    	else
+    	{
+    		i++;
+    	}
+    	HAL_UART_Receive_IT(&huart6, &btchar,1);
+    }
+}
 
 /* USER CODE END 1 */

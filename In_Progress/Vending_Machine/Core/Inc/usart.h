@@ -44,7 +44,8 @@ void MX_USART2_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int drv_esp_init(void);
+int drv_uart_init(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
