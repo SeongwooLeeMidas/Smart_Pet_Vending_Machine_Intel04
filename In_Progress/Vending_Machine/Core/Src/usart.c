@@ -19,18 +19,28 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "cmsis_os.h"
+#include "freertos.h"
+extern osMessageQId msgQueueHandle;
+
 
 /* USER CODE BEGIN 0 */
 uint8_t rx2char;
 volatile unsigned char rx2Flag = 0;
 volatile char rx2Data[50];
 volatile unsigned char btFlag = 0;
-uint8_t btchar;
 char btData[50];
+uint8_t btchar;
+void bluetooth_Event(void);
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart6_rx;
 
 /* USART2 init function */
 
@@ -115,6 +125,28 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    /* USART2 DMA Init */
+    /* USART2_RX Init */
+    hdma_usart2_rx.Instance = DMA1_Stream5;
+    hdma_usart2_rx.Init.Channel = DMA_CHANNEL_4;
+    hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_usart2_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_usart2_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.Mode = DMA_NORMAL;
+    hdma_usart2_rx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_usart2_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_usart2_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart2_rx);
+
+    /* USART2 interrupt Init */
+    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE BEGIN USART2_MspInit 1 */
 
   /* USER CODE END USART2_MspInit 1 */
@@ -138,6 +170,25 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF8_USART6;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    /* USART6 DMA Init */
+    /* USART6_RX Init */
+    hdma_usart6_rx.Instance = DMA2_Stream1;
+    hdma_usart6_rx.Init.Channel = DMA_CHANNEL_5;
+    hdma_usart6_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_usart6_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_usart6_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_usart6_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart6_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_usart6_rx.Init.Mode = DMA_NORMAL;
+    hdma_usart6_rx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_usart6_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_usart6_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart6_rx);
 
     /* USART6 interrupt Init */
     HAL_NVIC_SetPriority(USART6_IRQn, 5, 0);
@@ -165,6 +216,11 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     */
     HAL_GPIO_DeInit(GPIOA, USART_TX_Pin|USART_RX_Pin);
 
+    /* USART2 DMA DeInit */
+    HAL_DMA_DeInit(uartHandle->hdmarx);
+
+    /* USART2 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(USART2_IRQn);
   /* USER CODE BEGIN USART2_MspDeInit 1 */
 
   /* USER CODE END USART2_MspDeInit 1 */
@@ -183,6 +239,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     */
     HAL_GPIO_DeInit(GPIOC, GPIO_PIN_6|GPIO_PIN_7);
 
+    /* USART6 DMA DeInit */
+    HAL_DMA_DeInit(uartHandle->hdmarx);
+
     /* USART6 interrupt Deinit */
     HAL_NVIC_DisableIRQ(USART6_IRQn);
   /* USER CODE BEGIN USART6_MspDeInit 1 */
@@ -194,11 +253,11 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 /* USER CODE BEGIN 1 */
 int drv_uart_init(void)
 {
-	HAL_UART_Receive_IT(&huart2, &rx2char,1);
+	HAL_UART_Receive_DMA(&huart2, &rx2char,1);
 	return 0;
 }
 int drv_esp_init(void) {
-	HAL_UART_Receive_IT(&huart6, &btchar, 1);  // Initialize UART for ESP communication
+	HAL_UART_Receive_DMA(&huart6, &btchar,1);  // Initialize UART for ESP communication
 	return 0;  // Return 0 if successful
 }
 
@@ -218,24 +277,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     	{
     		i++;
     	}
-    	HAL_UART_Receive_IT(&huart2, &rx2char,1);
+    	HAL_UART_Receive_DMA(&huart2, &rx2char,1);
     }
     if(huart->Instance == USART6)
-    {
-    	static int i=0;
-    	btData[i] = btchar;
-    	if((btData[i] == '\n') || btData[i] == '\r')
-    	{
-    		btData[i] = '\0';
-    		btFlag = 1;
-    		i = 0;
-    	}
-    	else
-    	{
-    		i++;
-    	}
-    	HAL_UART_Receive_IT(&huart6, &btchar,1);
-    }
+		{
+    	static int i = 0;
+			btData[i] = btchar;
+			if ((btData[i] == '\n') || (btData[i] == '\r'))
+			{
+					btData[i] = '\0';
+					bluetooth_Event();
+					i = 0;
+			}
+			else
+			{
+					i++;
+			}
+			HAL_UART_Receive_DMA(&huart6, &btchar,1);
+		}
 }
 
 /* USER CODE END 1 */
