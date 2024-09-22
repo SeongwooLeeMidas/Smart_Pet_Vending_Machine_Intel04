@@ -54,7 +54,7 @@
 #endif
 #define configENABLE_FPU                         0
 #define configENABLE_MPU                         0
-
+#define configCHECK_FOR_STACK_OVERFLOW 2
 #define configUSE_PREEMPTION                     1
 #define configSUPPORT_STATIC_ALLOCATION          1
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
@@ -93,6 +93,8 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil              0
 #define INCLUDE_vTaskDelay                   1
 #define INCLUDE_xTaskGetSchedulerState       1
+#define INCLUDE_uxTaskGetStackHighWaterMark  1
+
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS

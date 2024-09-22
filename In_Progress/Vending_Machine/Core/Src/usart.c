@@ -19,7 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
-
+#include <stdio.h>
 /* USER CODE BEGIN 0 */
 uint8_t rx2char;
 volatile unsigned char rx2Flag = 0;

@@ -97,6 +97,7 @@ osThreadId IR_TaskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+void vApplicationStackOverflowHook(TaskHandle_t, char *);
 void bluetooth_Event(void);
 GPIO_PinState majorityVote(GPIO_PinState* values, int size);
 /* USER CODE END FunctionPrototypes */
@@ -150,11 +151,11 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of UART_Task */
-  osThreadDef(UART_Task, UART_Task_Func, osPriorityNormal, 0, 128);
+  osThreadDef(UART_Task, UART_Task_Func, osPriorityNormal, 0, 256);
   UART_TaskHandle = osThreadCreate(osThread(UART_Task), NULL);
 
   /* definition and creation of IR_Task */
-  osThreadDef(IR_Task, IR_Task_Func, osPriorityHigh, 0, 128);
+  osThreadDef(IR_Task, IR_Task_Func, osPriorityHigh, 0, 256);
   IR_TaskHandle = osThreadCreate(osThread(IR_Task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -176,6 +177,10 @@ void UART_Task_Func(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+
+  	// 태스크의 스택 사용량 확인
+		//UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
+		//printf("UART Task stack high watermark: %lu\r\n", uxHighWaterMark);
   	if(rx2Flag)
 		{
 			printf("recv2 : %s\r\n",rx2Data);
@@ -207,6 +212,9 @@ void IR_Task_Func(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+  	UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
+  	printf("IR Task stack high watermark: %lu\r\n", uxHighWaterMark);
+  	/*
   	for (int i = 0; i < NUM_IR_PINS; i++) {
 			sampleValues[i][sampleIndex[i]] = HAL_GPIO_ReadPin(IR_PORT, irPins[i]);
 			sampleIndex[i] = (sampleIndex[i] + 1) % SAMPLE_COUNT;
@@ -215,13 +223,15 @@ void IR_Task_Func(void const * argument)
 				GPIO_PinState majorityValue = majorityVote(sampleValues[i], SAMPLE_COUNT);
 				previousIrValues[i] = currentIrValues[i];
 				currentIrValues[i] = majorityValue;
-				printf("1:%d, 2:%d, 3:%d, 4:%d, 5:%d, 6:%d\r\n",currentIrValues[0],currentIrValues[1],currentIrValues[2],currentIrValues[3],currentIrValues[4],currentIrValues[5]);
+				//printf("1:%d, 2:%d, 3:%d, 4:%d, 5:%d, 6:%d\r\n",currentIrValues[0],currentIrValues[1],currentIrValues[2],currentIrValues[3],currentIrValues[4],currentIrValues[5]);
 				if (previousIrValues[i] == GPIO_PIN_RESET && currentIrValues[i] == GPIO_PIN_SET) {
 					printf("Motor %d OFF\r\n",i);
 					HAL_GPIO_WritePin(MOTOR_PORT, motorPins[i], GPIO_PIN_RESET);
 				}
 			}
 		}
+		*/
+
   	osDelay(50);
   }
   /* USER CODE END IR_Task_Func */
@@ -229,6 +239,23 @@ void IR_Task_Func(void const * argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+    // 스택 오버플로우가 발생한 태스크의 이름을 출력
+    printf("Stack overflow detected in task: %s\r\n", pcTaskName);
+
+    // 문제 해결을 위해 시스템을 멈추거나 복구 작업을 할 수 있음
+    while (1) {
+        // 디버깅 시에는 무한 루프에 빠져서 상태를 확인할 수 있음
+    }
+}
+void PrintTaskStatus(void)
+{
+    char taskList[512];  // 태스크 상태 정보를 저장할 버퍼
+    vTaskList(taskList);  // 모든 태스크의 상태와 스택 사용량을 가져옴
+    printf("Task\t\tState\tPrio\tStack\tID\r\n");
+    printf("%s\r\n", taskList);
+}
 GPIO_PinState majorityVote(GPIO_PinState *samples, int count) {
   int highCount = 0;
   for (int i = 0; i < count; i++) {
@@ -249,7 +276,6 @@ void bluetooth_Event()
   char recvBuf[CMD_SIZE]={0};
   char sendBuf[CMD_SIZE]={0};
   strcpy(recvBuf,btData);
-
   printf("btData : %s\r\n",btData);
 
   pToken = strtok(recvBuf,"[@]");
@@ -265,8 +291,14 @@ void bluetooth_Event()
   {
   	motorNumber = atoi(pArray[2]);
   	if(motorNumber >= 1 && motorNumber <= NUM_MOTOR_PINS) {
-				HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
+				//HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
 				printf("MOTOR %d ON\r\n",motorNumber);
+				UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
+				printf("BT Func stack high watermark: %lu\r\n", uxHighWaterMark);
+			  if(uxHighWaterMark == 0)
+			  {
+			  	printf("Stack overflow detected in task: BT Func\r\n");
+			  }
 		}
   }
   else if(!strncmp(pArray[1]," New conn",sizeof(" New conn")))
