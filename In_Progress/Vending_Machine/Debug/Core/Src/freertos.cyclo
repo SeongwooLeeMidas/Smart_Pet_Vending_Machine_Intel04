@@ -1,9 +1,9 @@
 ../Core/Src/freertos.c:116:13:vApplicationStackOverflowHook	1
 ../Core/Src/freertos.c:128:6:vApplicationGetIdleTaskMemory	1
 ../Core/Src/freertos.c:142:6:MX_FREERTOS_Init	1
-../Core/Src/freertos.c:185:6:UART_Task_Func	3
-../Core/Src/freertos.c:217:6:IR_Task_Func	1
-../Core/Src/freertos.c:251:6:PrintTaskStatus	1
-../Core/Src/freertos.c:258:15:majorityVote	3
-../Core/Src/freertos.c:268:6:bluetooth_Event	8
-../Core/Src/freertos.c:318:1:__io_putchar	1
+../Core/Src/freertos.c:190:6:UART_Task_Func	4
+../Core/Src/freertos.c:227:6:IR_Task_Func	5
+../Core/Src/freertos.c:258:6:PrintTaskStatus	1
+../Core/Src/freertos.c:265:15:majorityVote	3
+../Core/Src/freertos.c:275:6:bluetooth_Event	8
+../Core/Src/freertos.c:324:1:__io_putchar	1
