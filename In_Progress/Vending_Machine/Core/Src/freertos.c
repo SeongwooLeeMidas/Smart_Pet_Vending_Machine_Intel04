@@ -81,7 +81,6 @@ extern volatile unsigned char rx2Flag;
 extern volatile char rx2Data[50];
 extern volatile unsigned char btFlag;
 extern char btData[50];
-
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart6;
 ///////////// IR Sensor//////////////////
@@ -94,6 +93,7 @@ int sampleIndex[NUM_IR_PINS] = {0};
 /* USER CODE END Variables */
 osThreadId UART_TaskHandle;
 osThreadId IR_TaskHandle;
+osMessageQId msgQueueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -156,6 +156,11 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* definition and creation of msgQueue */
+  osMessageQDef(msgQueue, 32, uint32_t);
+  msgQueueHandle = osMessageCreate(osMessageQ(msgQueue), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -185,22 +190,27 @@ void MX_FREERTOS_Init(void) {
 void UART_Task_Func(void const * argument)
 {
   /* USER CODE BEGIN UART_Task_Func */
+	osEvent event;
   /* Infinite loop */
   for(;;)
   {
+  	event = osMessageGet(msgQueueHandle, osWaitForever);
 		UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
 		printf("UART Task stack high watermark: %lu\r\n", uxHighWaterMark);
-  	if(rx2Flag)
+		if (event.status == osEventMessage)
 		{
-			printf("recv2 : %s\r\n",rx2Data);
-			rx2Flag =0;
-	//	    HAL_UART_Transmit(&huart6, (uint8_t *)buf, strlen(buf), 0xFFFF);
-		}
-		if(btFlag)
-		{
-//		printf("bt : %s\r\n",btData);
-			btFlag =0;
-			bluetooth_Event();
+				uint32_t motorNumber = event.value.v;
+
+				// 모터 번호에 따른 동작 수행
+				if (motorNumber >= 1 && motorNumber <= NUM_MOTOR_PINS)
+				{
+						HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
+						printf("MOTOR %lu ON\r\n", motorNumber);
+				}
+				else
+				{
+						printf("Invalid motor number: %lu\r\n", motorNumber);
+				}
 		}
     osDelay(500);
   }
@@ -223,7 +233,6 @@ void IR_Task_Func(void const * argument)
   {
   	UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // ?��?�� ?��?��?��?�� ?��?�� ?��?��?��
   	printf("IR Task stack high watermark: %lu\r\n", uxHighWaterMark);
-  	/*
   	for (int i = 0; i < NUM_IR_PINS; i++) {
 			sampleValues[i][sampleIndex[i]] = HAL_GPIO_ReadPin(IR_PORT, irPins[i]);
 			sampleIndex[i] = (sampleIndex[i] + 1) % SAMPLE_COUNT;
@@ -239,8 +248,6 @@ void IR_Task_Func(void const * argument)
 				}
 			}
 		}
-		*/
-
   	osDelay(50);
   }
   /* USER CODE END IR_Task_Func */
@@ -272,9 +279,9 @@ void bluetooth_Event()
   int motorNumber = 0;
   char * pToken;
   char * pArray[ARR_CNT]={0};
-  size_t recvLength = strlen(btData);
-  char *recvBuf = pvPortMalloc(recvLength+1);
-  char *sendBuf = pvPortMalloc(recvLength+1);
+  char recvBuf[CMD_SIZE];
+  char sendBuf[CMD_SIZE];
+
   strcpy(recvBuf,btData);
   printf("btData : %s\r\n",btData);
 
@@ -291,14 +298,13 @@ void bluetooth_Event()
   {
   	motorNumber = atoi(pArray[2]);
   	if(motorNumber >= 1 && motorNumber <= NUM_MOTOR_PINS) {
-				//HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
-				printf("MOTOR %d ON\r\n",motorNumber);
-				UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
-				printf("BT Func stack high watermark: %lu\r\n", uxHighWaterMark);
-			  if(uxHighWaterMark == 0)
-			  {
-			  	printf("Stack overflow detected in task: BT Func\r\n");
-			  }
+  		UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+  		printf("BT Func stack high watermark: %lu\r\n", uxHighWaterMark);
+  		// 모터 번호를 메시지 큐에 전송
+			if (osMessagePut(msgQueueHandle, motorNumber, 0) != osOK)
+			{
+					printf("Failed to send motor number to queue\n");
+			}
 		}
   }
   else if(!strncmp(pArray[1]," New conn",sizeof(" New conn")))
