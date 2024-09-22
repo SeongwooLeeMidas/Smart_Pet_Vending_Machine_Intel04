@@ -97,7 +97,6 @@ osThreadId IR_TaskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-void vApplicationStackOverflowHook(TaskHandle_t, char *);
 void bluetooth_Event(void);
 GPIO_PinState majorityVote(GPIO_PinState* values, int size);
 /* USER CODE END FunctionPrototypes */
@@ -109,6 +108,18 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* GetIdleTaskMemory prototype (linked to static allocation support) */
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
+
+/* Hook prototypes */
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
+
+/* USER CODE BEGIN 4 */
+__weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+   /* Run time stack overflow checking is performed if
+   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+   called if a stack overflow is detected. */
+}
+/* USER CODE END 4 */
 
 /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
 static StaticTask_t xIdleTaskTCBBuffer;
@@ -177,10 +188,8 @@ void UART_Task_Func(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
-  	// 태스크의 스택 사용량 확인
-		//UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
-		//printf("UART Task stack high watermark: %lu\r\n", uxHighWaterMark);
+		UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+		printf("UART Task stack high watermark: %lu\r\n", uxHighWaterMark);
   	if(rx2Flag)
 		{
 			printf("recv2 : %s\r\n",rx2Data);
@@ -212,7 +221,7 @@ void IR_Task_Func(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-  	UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
+  	UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // ?��?�� ?��?��?��?�� ?��?�� ?��?��?��
   	printf("IR Task stack high watermark: %lu\r\n", uxHighWaterMark);
   	/*
   	for (int i = 0; i < NUM_IR_PINS; i++) {
@@ -239,20 +248,10 @@ void IR_Task_Func(void const * argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
-{
-    // 스택 오버플로우가 발생한 태스크의 이름을 출력
-    printf("Stack overflow detected in task: %s\r\n", pcTaskName);
-
-    // 문제 해결을 위해 시스템을 멈추거나 복구 작업을 할 수 있음
-    while (1) {
-        // 디버깅 시에는 무한 루프에 빠져서 상태를 확인할 수 있음
-    }
-}
 void PrintTaskStatus(void)
 {
-    char taskList[512];  // 태스크 상태 정보를 저장할 버퍼
-    vTaskList(taskList);  // 모든 태스크의 상태와 스택 사용량을 가져옴
+    char taskList[512];
+    vTaskList(taskList);
     printf("Task\t\tState\tPrio\tStack\tID\r\n");
     printf("%s\r\n", taskList);
 }
@@ -273,8 +272,9 @@ void bluetooth_Event()
   int motorNumber = 0;
   char * pToken;
   char * pArray[ARR_CNT]={0};
-  char recvBuf[CMD_SIZE]={0};
-  char sendBuf[CMD_SIZE]={0};
+  size_t recvLength = strlen(btData);
+  char *recvBuf = pvPortMalloc(recvLength+1);
+  char *sendBuf = pvPortMalloc(recvLength+1);
   strcpy(recvBuf,btData);
   printf("btData : %s\r\n",btData);
 
@@ -293,7 +293,7 @@ void bluetooth_Event()
   	if(motorNumber >= 1 && motorNumber <= NUM_MOTOR_PINS) {
 				//HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
 				printf("MOTOR %d ON\r\n",motorNumber);
-				UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // 현재 태스크의 스택 사용량
+				UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
 				printf("BT Func stack high watermark: %lu\r\n", uxHighWaterMark);
 			  if(uxHighWaterMark == 0)
 			  {
