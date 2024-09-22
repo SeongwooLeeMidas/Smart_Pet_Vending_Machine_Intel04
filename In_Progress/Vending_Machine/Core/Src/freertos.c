@@ -144,9 +144,6 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
-  /* Create the queue(s) */
-  /* definition and creation of msgQueue */
-
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -157,7 +154,7 @@ void MX_FREERTOS_Init(void) {
   UART_TaskHandle = osThreadCreate(osThread(UART_Task), NULL);
 
   /* definition and creation of IR_Task */
-  osThreadDef(IR_Task, IR_Task_Func, osPriorityNormal, 0, 128);
+  osThreadDef(IR_Task, IR_Task_Func, osPriorityHigh, 0, 128);
   IR_TaskHandle = osThreadCreate(osThread(IR_Task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -218,8 +215,9 @@ void IR_Task_Func(void const * argument)
 				GPIO_PinState majorityValue = majorityVote(sampleValues[i], SAMPLE_COUNT);
 				previousIrValues[i] = currentIrValues[i];
 				currentIrValues[i] = majorityValue;
-
+				printf("1:%d, 2:%d, 3:%d, 4:%d, 5:%d, 6:%d\r\n",currentIrValues[0],currentIrValues[1],currentIrValues[2],currentIrValues[3],currentIrValues[4],currentIrValues[5]);
 				if (previousIrValues[i] == GPIO_PIN_RESET && currentIrValues[i] == GPIO_PIN_SET) {
+					printf("Motor %d OFF\r\n",i);
 					HAL_GPIO_WritePin(MOTOR_PORT, motorPins[i], GPIO_PIN_RESET);
 				}
 			}
@@ -270,7 +268,6 @@ void bluetooth_Event()
 				HAL_GPIO_WritePin(MOTOR_PORT, motorPins[motorNumber - 1], GPIO_PIN_SET);
 				printf("MOTOR %d ON\r\n",motorNumber);
 		}
-		sprintf(sendBuf, "[%s]%s@%s\n", pArray[0], pArray[1], pArray[2]);
   }
   else if(!strncmp(pArray[1]," New conn",sizeof(" New conn")))
   {
@@ -284,8 +281,7 @@ void bluetooth_Event()
       return;
 
   sprintf(sendBuf,"[%s]%s@%s\n",pArray[0],pArray[1],pArray[2]);
-  HAL_UART_Transmit(&huart6, (uint8_t *)sendBuf, strlen(sendBuf), 0xFFFF);
-
+  HAL_UART_Transmit(&huart6, (uint8_t *)sendBuf, strlen(sendBuf), 100);
 }
 PUTCHAR_PROTOTYPE
 {

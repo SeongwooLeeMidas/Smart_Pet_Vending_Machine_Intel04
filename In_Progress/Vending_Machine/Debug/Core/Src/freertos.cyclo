@@ -1,7 +1,7 @@
-../Core/Src/freertos.c:120:6:vApplicationGetIdleTaskMemory	1
-../Core/Src/freertos.c:134:6:MX_FREERTOS_Init	1
-../Core/Src/freertos.c:182:6:UART_Task_Func	3
-../Core/Src/freertos.c:212:6:IR_Task_Func	5
-../Core/Src/freertos.c:263:15:majorityVote	3
-../Core/Src/freertos.c:273:6:bluetooth_Event	7
-../Core/Src/freertos.c:325:1:__io_putchar	1
+../Core/Src/freertos.c:117:6:vApplicationGetIdleTaskMemory	1
+../Core/Src/freertos.c:131:6:MX_FREERTOS_Init	1
+../Core/Src/freertos.c:179:6:UART_Task_Func	3
+../Core/Src/freertos.c:209:6:IR_Task_Func	5
+../Core/Src/freertos.c:238:15:majorityVote	3
+../Core/Src/freertos.c:248:6:bluetooth_Event	7
+../Core/Src/freertos.c:292:1:__io_putchar	1

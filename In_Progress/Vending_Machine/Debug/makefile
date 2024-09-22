@@ -38,34 +38,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := final_test_BT
+BUILD_ARTIFACT_NAME := Vending_Machine
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-final_test_BT.elf \
+Vending_Machine.elf \
 
 MAP_FILES += \
-final_test_BT.map \
+Vending_Machine.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-final_test_BT.list \
+Vending_Machine.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: final_test_BT.elf secondary-outputs
+main-build: Vending_Machine.elf secondary-outputs
 
 # Tool invocations
-final_test_BT.elf final_test_BT.map: $(OBJS) $(USER_OBJS) C:\Users\iot\STM32CubeIDE\workspace_1.15.0\final_test_BT\STM32F411RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "final_test_BT.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\iot\STM32CubeIDE\workspace_1.15.0\final_test_BT\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="final_test_BT.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Vending_Machine.elf Vending_Machine.map: $(OBJS) $(USER_OBJS) C:\Users\iot\STM32CubeIDE\workspace_1.15.0\Vending_Machine\STM32F411RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Vending_Machine.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\iot\STM32CubeIDE\workspace_1.15.0\Vending_Machine\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Vending_Machine.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -74,14 +74,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-final_test_BT.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "final_test_BT.list"
+Vending_Machine.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Vending_Machine.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) default.size.stdout final_test_BT.elf final_test_BT.list final_test_BT.map
+	-$(RM) Vending_Machine.elf Vending_Machine.list Vending_Machine.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
