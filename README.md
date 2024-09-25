@@ -45,8 +45,11 @@
 ☑️ 견종 분류 모델 제작 및 강아지 추적 시스템 구현
 
 
-☑️ STM32와 컨베이어 벨트를 활용한 자판기 기능 구현
-
+☑️ STM32를 활용한 자판기 기능 구현
+- 3층 스프링 모터
+![final2_bb](https://github.com/user-attachments/assets/c8148b83-317d-487c-bcfd-02b96e013bc7)
+- 2층 컨베이어 벨트
+![final2_2_bb](https://github.com/user-attachments/assets/2c2c9990-6003-43c7-81d4-636765d96ceb)
 
 ☑️ QT 기반 자판기 UI 개발 및 통합 제어 시스템 적용
 
