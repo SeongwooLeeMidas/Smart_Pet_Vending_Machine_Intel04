@@ -50,6 +50,8 @@
 ![final2_bb](https://github.com/user-attachments/assets/c8148b83-317d-487c-bcfd-02b96e013bc7)
 - 2층 컨베이어 벨트
 ![final2_2_bb](https://github.com/user-attachments/assets/2c2c9990-6003-43c7-81d4-636765d96ceb)
+- 자판기 시퀀스 다이어그램
+![image (2)](https://github.com/user-attachments/assets/d9ffa8fe-8cdf-46b6-8302-9bd10be902e0)
 
 ☑️ QT 기반 자판기 UI 개발 및 통합 제어 시스템 적용
 
